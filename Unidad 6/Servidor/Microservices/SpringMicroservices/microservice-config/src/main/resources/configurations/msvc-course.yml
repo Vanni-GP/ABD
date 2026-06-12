@@ -1,0 +1,20 @@
+server:
+  port: 9090
+
+spring:
+  application:
+    name: msvc-course
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://vannipostgres:5432/courseDb  # <-- CAMBIADO: Nombre del contenedor de Postgres
+    username: postgres
+    password: root  # <-- CAMBIADO: Mismo del compose
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database: postgresql
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://microservice-eureka-server:8761/eureka/

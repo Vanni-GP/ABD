@@ -1,0 +1,84 @@
+<div style="padding: 30px; font-family: 'Segoe UI', sans-serif;">
+  <h2 style="color: #2c3e50; margin-bottom: 5px;">Módulo de Alumnos (Microservicios)</h2>
+  <p style="color: #7f8c8d; margin-top: 0; margin-bottom: 25px;">Selecciona la operación distribuida que deseas ejecutar:</p>
+
+  <div style="display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 2px solid #e9ecef; padding-bottom: 10px;">
+    <button (click)="switchTab('all')" [style.background-color]="activeTab === 'all' ? '#34495e' : '#bdc3c7'" style="color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">📋 Listar Todos</button>
+    <button (click)="switchTab('search')" [style.background-color]="activeTab === 'search' ? '#34495e' : '#bdc3c7'" style="color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">🔍 Consultar por ID</button>
+    <button (click)="switchTab('create')" [style.background-color]="activeTab === 'create' ? '#2ecc71' : '#bdc3c7'" style="color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">➕ Registrar Nuevo</button>
+    <button (click)="switchTab('delete')" [style.background-color]="activeTab === 'delete' ? '#e74c3c' : '#bdc3c7'" style="color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">❌ Dar de Baja</button>
+  </div>
+
+  <div *ngIf="activeTab === 'all'">
+    <table border="1" cellpadding="12" style="border-collapse: collapse; width: 100%; border: 1px solid #bdc3c7;">
+      <thead style="background-color: #34495e; color: white;">
+        <tr>
+          <th>ID</th><th>Nombre</th><th>Apellido</th><th>Email</th><th>ID Curso</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of studentsList" style="border-bottom: 1px solid #dee2e6;">
+          <td style="font-weight: bold;">{{ item.id }}</td>
+          <td>{{ item.name }}</td>
+          <td>{{ item.lastname }}</td>
+          <td>{{ item.email }}</td>
+          <td><span style="padding: 4px 8px; background-color: #e8f4fd; color: #1d82dc; border-radius: 4px;">{{ item.courseId || 'Sin Asignar' }}</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div *ngIf="activeTab === 'search'" style="background-color: #f8f9fa; padding: 20px; border-radius: 6px; border: 1px solid #e9ecef;">
+    <h4 style="margin-top:0;">Buscar Alumno en MySQL</h4>
+    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+      <input type="number" [(ngModel)]="searchId" placeholder="Escribe el ID del alumno" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 200px;">
+      <button (click)="onSearch()" style="padding: 8px 15px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Buscar</button>
+    </div>
+
+    <div *ngIf="singleStudent && !singleStudent.error" style="background: white; padding: 15px; border-radius: 4px; border: 1px solid #d4edda;">
+      <p><strong>ID Alumno:</strong> {{ singleStudent.id }}</p>
+      <p><strong>Nombre Completo:</strong> {{ singleStudent.name }} {{ singleStudent.lastname }}</p>
+      <p><strong>Correo Electrónico:</strong> {{ singleStudent.email }}</p>
+      <p><strong>Curso Vinculado:</strong> {{ singleStudent.courseId || 'Ninguno' }}</p>
+      <button (click)="prepareEdit()" style="margin-top: 10px; padding: 6px 12px; background-color: #f1c40f; color: white; border: none; border-radius: 4px; cursor: pointer;">✏️ Modificar este Alumno</button>
+    </div>
+    <div *ngIf="singleStudent && singleStudent.error" style="color: #e74c3c; font-weight: bold;">
+      ⚠️ No existe ningún alumno con ese ID en el sistema distribuido.
+    </div>
+  </div>
+
+  <div *ngIf="activeTab === 'create'" style="background-color: #f8f9fa; padding: 20px; border-radius: 6px; border: 1px solid #e9ecef; max-width: 500px;">
+    <h4 style="margin-top:0;">Formulario de Alta</h4>
+    <form (ngSubmit)="onCreate()" style="display: flex; flex-direction: column; gap: 12px;">
+      <input type="text" [(ngModel)]="currentStudent.name" name="name" placeholder="Nombre" required style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+      <input type="text" [(ngModel)]="currentStudent.lastname" name="lastname" placeholder="Apellido" required style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+      <input type="email" [(ngModel)]="currentStudent.email" name="email" placeholder="Correo" required style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+      <input type="number" [(ngModel)]="currentStudent.courseId" name="courseId" placeholder="ID de Curso" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+      <button type="submit" style="padding: 10px; background-color: #2ecc71; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Guardar en Base de Datos</button>
+    </form>
+  </div>
+
+  <div *ngIf="activeTab === 'edit'" style="background-color: #f8f9fa; padding: 20px; border-radius: 6px; border: 1px solid #e9ecef; max-width: 500px;">
+    <h4 style="margin-top:0; color: #f39c12;">Modificar Datos de Alumno (ID: {{currentStudent.id}})</h4>
+    <form (ngSubmit)="onUpdate()" style="display: flex; flex-direction: column; gap: 12px;">
+      <input type="text" [(ngModel)]="currentStudent.name" name="name" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+      <input type="text" [(ngModel)]="currentStudent.lastname" name="lastname" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+      <input type="email" [(ngModel)]="currentStudent.email" name="email" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+      <input type="number" [(ngModel)]="currentStudent.courseId" name="courseId" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+      <div style="display: flex; gap: 10px;">
+        <button type="submit" style="flex: 1; padding: 10px; background-color: #f1c40f; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Guardar Cambios</button>
+        <button type="button" (click)="switchTab('search')" style="padding: 10px; background-color: #95a5a6; color: white; border: none; border-radius: 4px; cursor: pointer;">Volver</button>
+      </div>
+    </form>
+  </div>
+
+  <div *ngIf="activeTab === 'delete'" style="background-color: #f8f9fa; padding: 20px; border-radius: 6px; border: 1px solid #e9ecef; max-width: 500px;">
+    <h4 style="margin-top:0; color: #e74c3c;">Baja de Alumno</h4>
+    <p style="font-size: 0.9em; color: #7f8c8d;">Ingresa el ID del estudiante. Esta acción borrará el registro físico de MySQL.</p>
+    <div style="display: flex; gap: 10px;">
+      <input type="number" [(ngModel)]="searchId" placeholder="ID a eliminar" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 150px;">
+      <button (click)="onDelete()" style="padding: 8px 15px; background-color: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Eliminar Registro</button>
+    </div>
+  </div>
+
+</div>

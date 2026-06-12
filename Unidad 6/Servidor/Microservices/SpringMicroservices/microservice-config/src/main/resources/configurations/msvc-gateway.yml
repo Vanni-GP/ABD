@@ -1,0 +1,49 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: msvc-gateway
+  cloud:
+    gateway:
+      # 1. CORS GLOBAL CONFIGURADO EXACTAMENTE PARA LA ARQUITECTURA MVC
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "http://localhost:4200"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+
+      # 2. TUS RUTAS DE ENRUTAMIENTO ORIGINALES (ADAPTADAS PARA DOCKER)
+      mvc:
+        routes:
+          - id: msvc-student
+            uri: http://microservice-student-app:8090  # <-- CORREGIDO: Apunta al nombre del contenedor en el compose
+            predicates:
+              - Path=/api/student/**
+
+          - id: msvc-course
+            uri: http://microservice-course-app:9090   # <-- CORREGIDO: Apunta al nombre del contenedor en el compose
+            predicates:
+              - Path=/api/course/**
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://microservice-eureka-server:8761/eureka/ # <-- CORREGIDO: DNS interno de Docker
+  instance:
+    hostname: microservice-gateway-app  # <-- CORREGIDO: Mismo container_name de tu compose
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"

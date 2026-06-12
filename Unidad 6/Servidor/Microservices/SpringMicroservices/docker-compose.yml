@@ -1,0 +1,129 @@
+networks:
+  msvc-network:
+    driver: bridge
+
+services:
+  # --- 1. BASES DE DATOS ---
+  vannimysql:
+    image: mysql:8.0
+    container_name: vannimysql
+    ports:
+      - "3307:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: studentDb
+    networks:
+      - msvc-network
+
+  vannipostgres:
+    image: postgres:15-alpine
+    container_name: vannipostgres
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: courseDb
+    networks:
+      - msvc-network
+
+  # --- 2. CONFIG SERVER ---
+  microservice-config:
+    build: ./microservice-config
+    container_name: microservice-config-server
+    ports:
+      - "8888:8888" # Exponemos el puerto para que los healthchecks y tú puedan acceder
+    networks:
+      - msvc-network
+    healthcheck:
+      # Como ya agregaste Actuator, Docker validará la salud en este endpoint
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8888/actuator/health"]
+      interval: 8s      # Cada cuánto tiempo Docker revisará el estado
+      timeout: 5s       # Tiempo límite para responder
+      retries: 15       # Cuántas veces reintentará antes de darlo por muerto
+      start_period: 20s # Tiempo de gracia inicial para que Spring Boot levante el Jar
+
+  # --- 3. SERVIDOR EUREKA ---
+  microservice-eureka:
+    build: ./microservice-eureka
+    container_name: microservice-eureka-server
+    ports:
+      - "8761:8761"
+    networks:
+      - msvc-network
+    depends_on:
+      microservice-config:
+        condition: service_healthy # No arranca hasta que Config Server esté al 100% healthy
+
+  # --- 4. MICROSERVICIOS DE NEGOCIO ---
+  microservice-student:
+    build: ./microservice-student
+    container_name: microservice-student-app
+    networks:
+      - msvc-network
+    depends_on:
+      vannimysql:
+        condition: service_started
+      microservice-config:
+        condition: service_healthy # Clave para que no truene el Fail-Fast de Spring Cloud
+      microservice-eureka:
+        condition: service_started
+
+  microservice-course:
+    build: ./microservice-course
+    container_name: microservice-course-app
+    networks:
+      - msvc-network
+    depends_on:
+      vannipostgres:
+        condition: service_started
+      microservice-config:
+        condition: service_healthy # Clave para que no truene el Fail-Fast de Spring Cloud
+      microservice-eureka:
+        condition: service_started
+
+  # --- 5. API GATEWAY ---
+  microservice-gateway:
+    build: ./microservice-gateway
+    container_name: microservice-gateway-app
+    ports:
+      - "8080:8080"
+    networks:
+      - msvc-network
+    depends_on:
+      microservice-config:
+        condition: service_healthy
+      microservice-eureka:
+        condition: service_started
+      microservice-student:
+        condition: service_started
+      microservice-course:
+        condition: service_started
+
+  # --- 6. FRONTEND ANGULAR ---
+  angular-front:
+    build: ../../Angular/angular-msvc-front
+    container_name: angular-front-app
+    # Comentamos el puerto viejo para que el acceso externo sea exclusivamente mediante Nginx
+    # ports:
+    #   - "4215:80"
+    networks:
+      - msvc-network
+    depends_on:
+      - microservice-gateway
+
+  # --- 7. PROXY INVERSO (NGINX) ---
+  nginx-server:
+    image: nginx:alpine
+    container_name: nginx-server
+    ports:
+      - "80:80" # Única entrada del servidor en el puerto 80 estándar
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro # Vincula tu archivo manual
+    networks:
+      - msvc-network
+    depends_on:
+      microservice-gateway:
+        condition: service_started
+      angular-front:
+        condition: service_started

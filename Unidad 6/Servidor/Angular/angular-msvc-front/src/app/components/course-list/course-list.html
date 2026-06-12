@@ -1,0 +1,77 @@
+<div style="padding: 30px; font-family: 'Segoe UI', sans-serif;">
+  <h2 style="color: #2c3e50; margin-bottom: 5px;">Módulo de Cursos (Microservicios)</h2>
+  <p style="color: #7f8c8d; margin-top: 0; margin-bottom: 25px;">Selecciona la operación distribuida que deseas ejecutar en PostgreSQL:</p>
+
+  <div style="display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 2px solid #e9ecef; padding-bottom: 10px;">
+    <button (click)="switchTab('all')" [style.background-color]="activeTab === 'all' ? '#2980b9' : '#bdc3c7'" style="color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">📋 Listar Todos</button>
+    <button (click)="switchTab('search')" [style.background-color]="activeTab === 'search' ? '#2980b9' : '#bdc3c7'" style="color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">🔍 Consultar por ID</button>
+    <button (click)="switchTab('create')" [style.background-color]="activeTab === 'create' ? '#2ecc71' : '#bdc3c7'" style="color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">➕ Registrar Nuevo</button>
+    <button (click)="switchTab('delete')" [style.background-color]="activeTab === 'delete' ? '#e74c3c' : '#bdc3c7'" style="color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">❌ Dar de Baja</button>
+  </div>
+
+  <div *ngIf="activeTab === 'all'">
+    <table border="1" cellpadding="12" style="border-collapse: collapse; width: 100%; border: 1px solid #bdc3c7;">
+      <thead style="background-color: #2980b9; color: white;">
+        <tr>
+          <th>ID Curso</th><th>Nombre de la Materia</th><th>Profesor Asignado</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let curso of coursesList" style="border-bottom: 1px solid #dee2e6;">
+          <td style="font-weight: bold;">{{ curso.id }}</td>
+          <td>{{ curso.name }}</td>
+          <td>{{ curso.teacher || 'Por asignar' }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div *ngIf="activeTab === 'search'" style="background-color: #f8f9fa; padding: 20px; border-radius: 6px; border: 1px solid #e9ecef;">
+    <h4 style="margin-top:0;">Buscar Curso en PostgreSQL</h4>
+    <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+      <input type="number" [(ngModel)]="searchId" placeholder="Escribe el ID del curso" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 200px;">
+      <button (click)="onSearch()" style="padding: 8px 15px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Buscar</button>
+    </div>
+
+    <div *ngIf="singleCourse && !singleCourse.error" style="background: white; padding: 15px; border-radius: 4px; border: 1px solid #d4edda;">
+      <p><strong>ID Curso:</strong> {{ singleCourse.id }}</p>
+      <p><strong>Materia:</strong> {{ singleCourse.name }}</p>
+      <p><strong>Profesor:</strong> {{ singleCourse.teacher || 'Por asignar' }}</p>
+      <button (click)="prepareEdit()" style="margin-top: 10px; padding: 6px 12px; background-color: #f1c40f; color: white; border: none; border-radius: 4px; cursor: pointer;">✏️ Modificar este Curso</button>
+    </div>
+    <div *ngIf="singleCourse && singleCourse.error" style="color: #e74c3c; font-weight: bold;">
+      ⚠️ No existe ningún curso con ese ID en la base de datos distribuida.
+    </div>
+  </div>
+
+  <div *ngIf="activeTab === 'create'" style="background-color: #f8f9fa; padding: 20px; border-radius: 6px; border: 1px solid #e9ecef; max-width: 500px;">
+    <h4 style="margin-top:0;">Formulario de Alta de Curso</h4>
+    <form (ngSubmit)="onCreate()" style="display: flex; flex-direction: column; gap: 12px;">
+      <input type="text" [(ngModel)]="currentCourse.name" name="name" placeholder="Nombre de la Materia" required style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+      <input type="text" [(ngModel)]="currentCourse.teacher" name="teacher" placeholder="Nombre del Profesor" required style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+      <button type="submit" style="padding: 10px; background-color: #2ecc71; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Guardar Curso</button>
+    </form>
+  </div>
+
+  <div *ngIf="activeTab === 'edit'" style="background-color: #f8f9fa; padding: 20px; border-radius: 6px; border: 1px solid #e9ecef; max-width: 500px;">
+    <h4 style="margin-top:0; color: #f39c12;">Modificar Curso (ID: {{currentCourse.id}})</h4>
+    <form (ngSubmit)="onUpdate()" style="display: flex; flex-direction: column; gap: 12px;">
+      <input type="text" [(ngModel)]="currentCourse.name" name="name" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+      <input type="text" [(ngModel)]="currentCourse.teacher" name="teacher" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+      <div style="display: flex; gap: 10px;">
+        <button type="submit" style="flex: 1; padding: 10px; background-color: #f1c40f; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Guardar Cambios</button>
+        <button type="button" (click)="switchTab('search')" style="padding: 10px; background-color: #95a5a6; color: white; border: none; border-radius: 4px; cursor: pointer;">Volver</button>
+      </div>
+    </form>
+  </div>
+
+  <div *ngIf="activeTab === 'delete'" style="background-color: #f8f9fa; padding: 20px; border-radius: 6px; border: 1px solid #e9ecef; max-width: 500px;">
+    <h4 style="margin-top:0; color: #e74c3c;">Eliminar Curso de Postgres</h4>
+    <p style="font-size: 0.9em; color: #7f8c8d;">Ingresa el ID del curso que darás de baja permanentemente.</p>
+    <div style="display: flex; gap: 10px;">
+      <input type="number" [(ngModel)]="searchId" placeholder="ID del curso" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 150px;">
+      <button (click)="onDelete()" style="padding: 8px 15px; background-color: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Eliminar Registro</button>
+    </div>
+  </div>
+
+</div>

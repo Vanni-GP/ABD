@@ -1,0 +1,20 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: msvc-student
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://vannimysql:3306/studentDb  # <-- CAMBIADO: Nombre del contenedor de MySQL
+    username: root
+    password: root  # <-- CAMBIADO: Mismo del compose
+  jpa:
+    hibernate:
+      ddl-auto: update
+    database: mysql
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://microservice-eureka-server:8761/eureka/

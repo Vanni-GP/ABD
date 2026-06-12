@@ -1,0 +1,17 @@
+server:
+  port: 8761
+
+spring:
+  application:
+    name: msvc-eureka
+
+eureka:
+  client:
+    # Estas dos son CRÍTICAS para que el servidor no intente registrarse ni buscarse a sí mismo
+    register-with-eureka: false
+    fetch-registry: false
+    service-url:
+      # Apuntamos a un valor vacío o simplemente eliminamos la referencia a localhost
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    hostname: microservice-eureka-server

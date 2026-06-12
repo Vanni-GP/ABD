@@ -1,0 +1,37 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: msvc-gateway
+  config:
+    import: "optional:configserver:http://microservice-config-server:8888/"
+  cloud:
+    config:
+      fail-fast: true
+
+    # --- CONFIGURACIÓN DE RUTAS Y CORS GLOBAL ---
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            # Cambiado a 4215 para hacer match con tu puerto mapeado en Docker
+            allowedOrigins: "http://localhost:4215"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+
+      routes:
+        - id: msvc-student
+          uri: lb://MSVC-STUDENT
+          predicates:
+            - Path=/api/student/**
+
+        - id: msvc-course
+          uri: lb://MSVC-COURSE
+          predicates:
+            - Path=/api/course/**
